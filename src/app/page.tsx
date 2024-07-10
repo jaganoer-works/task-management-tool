@@ -1,113 +1,434 @@
-import Image from "next/image";
+"use client";
+import React, { useState, KeyboardEvent, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 
-export default function Home() {
+interface Task {
+  id: number;
+  text: string;
+  completed: boolean;
+  priority: "low" | "medium" | "high";
+  dueDate: Date | null;
+}
+
+interface Project {
+  id: number;
+  name: string;
+  tasks: Task[];
+}
+
+const priorityColors = {
+  low: "bg-green-200",
+  medium: "bg-yellow-200",
+  high: "bg-red-200",
+};
+
+const Home: React.FC = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [newProject, setNewProject] = useState<string>("");
+  const [newTask, setNewTask] = useState<string>("");
+  const [openProjects, setOpenProjects] = useState<string[]>([]);
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingTaskText, setEditingTaskText] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [filterCompleted, setFilterCompleted] = useState<string>("all");
+
+  const addProject = (): void => {
+    if (newProject.trim() !== "") {
+      const newProjectId = Date.now();
+      setProjects([
+        ...projects,
+        { id: newProjectId, name: newProject, tasks: [] },
+      ]);
+      setNewProject("");
+      setOpenProjects([...openProjects, newProjectId.toString()]);
+    }
+  };
+
+  const editProject = (projectId: number, newName: string): void => {
+    setProjects(
+      projects.map((project) =>
+        project.id === projectId ? { ...project, name: newName } : project
+      )
+    );
+    setEditingProjectId(null);
+  };
+
+  const deleteProject = (projectId: number): void => {
+    setProjects(projects.filter((project) => project.id !== projectId));
+    setOpenProjects(openProjects.filter((id) => id !== projectId.toString()));
+  };
+
+  const addTask = (projectId: number): void => {
+    if (newTask.trim() !== "") {
+      setProjects(
+        projects.map((project) =>
+          project.id === projectId
+            ? {
+                ...project,
+                tasks: [
+                  ...project.tasks,
+                  {
+                    id: Date.now(),
+                    text: newTask,
+                    completed: false,
+                    priority: "medium",
+                    dueDate: null,
+                  },
+                ],
+              }
+            : project
+        )
+      );
+      setNewTask("");
+    }
+  };
+
+  const toggleTask = (projectId: number, taskId: number): void => {
+    setProjects(
+      projects.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === taskId
+                  ? { ...task, completed: !task.completed }
+                  : task
+              ),
+            }
+          : project
+      )
+    );
+  };
+
+  const deleteTask = (projectId: number, taskId: number): void => {
+    setProjects(
+      projects.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              tasks: project.tasks.filter((task) => task.id !== taskId),
+            }
+          : project
+      )
+    );
+  };
+
+  const startEditingTask = (task: Task): void => {
+    setEditingTaskId(task.id);
+    setEditingTaskText(task.text);
+  };
+
+  const saveEditingTask = (projectId: number): void => {
+    if (editingTaskId !== null) {
+      setProjects(
+        projects.map((project) =>
+          project.id === projectId
+            ? {
+                ...project,
+                tasks: project.tasks.map((task) =>
+                  task.id === editingTaskId
+                    ? { ...task, text: editingTaskText }
+                    : task
+                ),
+              }
+            : project
+        )
+      );
+      setEditingTaskId(null);
+      setEditingTaskText("");
+    }
+  };
+
+  const updateTaskPriority = (
+    projectId: number,
+    taskId: number,
+    priority: "low" | "medium" | "high"
+  ): void => {
+    setProjects(
+      projects.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === taskId ? { ...task, priority } : task
+              ),
+            }
+          : project
+      )
+    );
+  };
+
+  const updateTaskDueDate = (
+    projectId: number,
+    taskId: number,
+    dueDate: Date | null
+  ): void => {
+    setProjects(
+      projects.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === taskId ? { ...task, dueDate } : task
+              ),
+            }
+          : project
+      )
+    );
+  };
+
+  const handleProjectKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      addProject();
+    }
+  };
+
+  const handleTaskKeyDown = (
+    e: KeyboardEvent<HTMLInputElement>,
+    projectId: number
+  ): void => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (editingTaskId !== null) {
+        saveEditingTask(projectId);
+      } else {
+        addTask(projectId);
+      }
+    }
+  };
+
+  const filteredProjects = projects.map((project) => ({
+    ...project,
+    tasks: project.tasks.filter((task) => {
+      const matchesSearch = task.text
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesPriority =
+        filterPriority === "all" || task.priority === filterPriority;
+      const matchesCompleted =
+        filterCompleted === "all" ||
+        (filterCompleted === "completed" && task.completed) ||
+        (filterCompleted === "active" && !task.completed);
+      return matchesSearch && matchesPriority && matchesCompleted;
+    }),
+  }));
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
+      <h1 className="text-2xl font-bold mb-4">プロジェクト管理ツール</h1>
+      <div className="flex mb-4">
+        <Input
+          type="text"
+          value={newProject}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setNewProject(e.target.value)
+          }
+          onKeyDown={handleProjectKeyDown}
+          placeholder="新しいプロジェクト名を入力"
+          className="flex-grow mr-2"
+        />
+        <Button onClick={addProject}>プロジェクト追加</Button>
+      </div>
+      <div className="mb-4">
+        <Input
+          type="text"
+          value={searchTerm}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setSearchTerm(e.target.value)
+          }
+          placeholder="タスクを検索"
+          className="mb-2"
+        />
+        <div className="flex space-x-2">
+          <Select onValueChange={setFilterPriority} defaultValue="all">
+            <SelectTrigger>
+              <SelectValue placeholder="優先度でフィルタ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全て</SelectItem>
+              <SelectItem value="low">低</SelectItem>
+              <SelectItem value="medium">中</SelectItem>
+              <SelectItem value="high">高</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select onValueChange={setFilterCompleted} defaultValue="all">
+            <SelectTrigger>
+              <SelectValue placeholder="状態でフィルタ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全て</SelectItem>
+              <SelectItem value="active">未完了</SelectItem>
+              <SelectItem value="completed">完了</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      <Accordion
+        type="multiple"
+        value={openProjects}
+        onValueChange={setOpenProjects}
+        className="w-full"
+      >
+        {filteredProjects.map((project) => (
+          <AccordionItem value={project.id.toString()} key={project.id}>
+            <AccordionTrigger>
+              {editingProjectId === project.id ? (
+                <Input
+                  type="text"
+                  value={project.name}
+                  onChange={(e) => editProject(project.id, e.target.value)}
+                  onBlur={() => setEditingProjectId(null)}
+                  autoFocus
+                />
+              ) : (
+                <span onClick={() => setEditingProjectId(project.id)}>
+                  {project.name}
+                </span>
+              )}
+              <Button
+                onClick={() => deleteProject(project.id)}
+                className="ml-2"
+              >
+                削除
+              </Button>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="flex mb-4">
+                <Input
+                  type="text"
+                  value={newTask}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setNewTask(e.target.value)
+                  }
+                  onKeyDown={(e) => handleTaskKeyDown(e, project.id)}
+                  placeholder="新しいタスクを入力"
+                  className="flex-grow mr-2"
+                />
+                <Button onClick={() => addTask(project.id)}>タスク追加</Button>
+              </div>
+              <ul>
+                {project.tasks.map((task) => (
+                  <li
+                    key={task.id}
+                    className={`flex items-center mb-2 p-2 rounded ${
+                      priorityColors[task.priority]
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleTask(project.id, task.id)}
+                      className="mr-2"
+                    />
+                    {editingTaskId === task.id ? (
+                      <Input
+                        type="text"
+                        value={editingTaskText}
+                        onChange={(e) => setEditingTaskText(e.target.value)}
+                        onKeyDown={(e) => handleTaskKeyDown(e, project.id)}
+                        className="flex-grow mr-2"
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        className={`flex-grow ${
+                          task.completed ? "line-through" : ""
+                        } cursor-pointer`}
+                        onClick={() => startEditingTask(task)}
+                      >
+                        {task.text}
+                      </span>
+                    )}
+                    <Select
+                      onValueChange={(value) =>
+                        updateTaskPriority(
+                          project.id,
+                          task.id,
+                          value as "low" | "medium" | "high"
+                        )
+                      }
+                      defaultValue={task.priority}
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue placeholder="優先度" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">低</SelectItem>
+                        <SelectItem value="medium">中</SelectItem>
+                        <SelectItem value="high">高</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="ml-2">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {task.dueDate ? (
+                            format(task.dueDate, "PPP")
+                          ) : (
+                            <span>期限を設定</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={task.dueDate || undefined}
+                          onSelect={(date: Date | undefined) =>
+                            updateTaskDueDate(project.id, task.id, date || null)
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {editingTaskId === task.id ? (
+                      <Button
+                        onClick={() => saveEditingTask(project.id)}
+                        className="ml-2"
+                      >
+                        保存
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => deleteTask(project.id, task.id)}
+                        className="ml-2"
+                      >
+                        削除
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
   );
-}
+};
+
+export default Home;

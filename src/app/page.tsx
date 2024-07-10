@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, KeyboardEvent, useEffect } from "react";
+import React, { useState, KeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Trash2 } from "lucide-react";
 
 interface Task {
   id: number;
@@ -311,10 +311,15 @@ const Home: React.FC = () => {
                 </span>
               )}
               <Button
-                onClick={() => deleteProject(project.id)}
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteProject(project.id);
+                }}
                 className="ml-2"
               >
-                削除
+                <Trash2 className="h-4 w-4" />
               </Button>
             </AccordionTrigger>
             <AccordionContent>
@@ -414,10 +419,12 @@ const Home: React.FC = () => {
                       </Button>
                     ) : (
                       <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => deleteTask(project.id, task.id)}
                         className="ml-2"
                       >
-                        削除
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </li>

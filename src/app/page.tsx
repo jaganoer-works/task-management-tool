@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, KeyboardEvent } from "react";
+import React, { useState, KeyboardEvent, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +23,13 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Calendar as CalendarIcon, Trash2 } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Trash2,
+  Play,
+  Pause,
+  StopCircle,
+} from "lucide-react";
 
 interface Task {
   id: number;
@@ -31,6 +37,9 @@ interface Task {
   completed: boolean;
   priority: "low" | "medium" | "high";
   dueDate: Date | null;
+  timeSpent: number;
+  isTracking: boolean;
+  startTime: number | null;
 }
 
 interface Project {
@@ -98,6 +107,9 @@ const Home: React.FC = () => {
                     completed: false,
                     priority: "medium",
                     dueDate: null,
+                    timeSpent: 0,
+                    isTracking: false,
+                    startTime: null,
                   },
                 ],
               }
@@ -202,6 +214,56 @@ const Home: React.FC = () => {
     );
   };
 
+  const toggleTimeTracking = (projectId: number, taskId: number): void => {
+    setProjects(
+      projects.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === taskId
+                  ? task.isTracking
+                    ? {
+                        ...task,
+                        isTracking: false,
+                        timeSpent:
+                          task.timeSpent +
+                          (Date.now() - (task.startTime || 0)) / 1000,
+                        startTime: null,
+                      }
+                    : { ...task, isTracking: true, startTime: Date.now() }
+                  : task
+              ),
+            }
+          : project
+      )
+    );
+  };
+
+  const stopTimeTracking = (projectId: number, taskId: number): void => {
+    setProjects(
+      projects.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === taskId
+                  ? {
+                      ...task,
+                      isTracking: false,
+                      timeSpent:
+                        task.timeSpent +
+                        (Date.now() - (task.startTime || 0)) / 1000,
+                      startTime: null,
+                    }
+                  : task
+              ),
+            }
+          : project
+      )
+    );
+  };
+
   const handleProjectKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -223,6 +285,42 @@ const Home: React.FC = () => {
     }
   };
 
+  const formatDate = (date: Date | null): string => {
+    if (!date) return "";
+    return format(date, "yyyy/MM/dd (EE)", { locale: ja });
+  };
+
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setProjects((prevProjects) =>
+        prevProjects.map((project) => ({
+          ...project,
+          tasks: project.tasks.map((task) =>
+            task.isTracking && task.startTime
+              ? {
+                  ...task,
+                  timeSpent:
+                    task.timeSpent + (Date.now() - task.startTime) / 1000,
+                  startTime: Date.now(),
+                }
+              : task
+          ),
+        }))
+      );
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const filteredProjects = projects.map((project) => ({
     ...project,
     tasks: project.tasks.filter((task) => {
@@ -238,11 +336,6 @@ const Home: React.FC = () => {
       return matchesSearch && matchesPriority && matchesCompleted;
     }),
   }));
-
-  const formatDate = (date: Date | null): string => {
-    if (!date) return "";
-    return format(date, "yyyy/MM/dd (EE)", { locale: ja });
-  };
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
@@ -416,6 +509,27 @@ const Home: React.FC = () => {
                         />
                       </PopoverContent>
                     </Popover>
+                    <div className="ml-2 flex items-center">
+                      <span className="mr-2">{formatTime(task.timeSpent)}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleTimeTracking(project.id, task.id)}
+                      >
+                        {task.isTracking ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => stopTimeTracking(project.id, task.id)}
+                      >
+                        <StopCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
                     {editingTaskId === task.id ? (
                       <Button
                         onClick={() => saveEditingTask(project.id)}

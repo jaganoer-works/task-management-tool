@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { Calendar as CalendarIcon, Trash2 } from "lucide-react";
 
 interface Task {
@@ -238,6 +239,11 @@ const Home: React.FC = () => {
     }),
   }));
 
+  const formatDate = (date: Date | null): string => {
+    if (!date) return "";
+    return format(date, "yyyy/MM/dd (EE)", { locale: ja });
+  };
+
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
       <h1 className="text-2xl font-bold mb-4">プロジェクト管理ツール</h1>
@@ -393,7 +399,7 @@ const Home: React.FC = () => {
                         <Button variant="outline" className="ml-2">
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {task.dueDate ? (
-                            format(task.dueDate, "PPP")
+                            formatDate(task.dueDate)
                           ) : (
                             <span>期限を設定</span>
                           )}

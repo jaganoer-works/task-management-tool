@@ -21,8 +21,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
 import {
   Calendar as CalendarIcon,
   Trash2,
@@ -32,6 +30,7 @@ import {
 } from "lucide-react";
 import { priorityColors } from "@/const/const";
 import { useProjectManagement } from "@/hooks/useProjectManagement";
+import { formatDate, formatTime } from "@/lib/formatters";
 
 const Home: React.FC = () => {
   const {
@@ -66,20 +65,6 @@ const Home: React.FC = () => {
     handleProjectKeyDown,
     handleTaskKeyDown,
   } = useProjectManagement();
-
-  const formatDate = (date: Date | null): string => {
-    if (!date) return "";
-    return format(date, "yyyy/MM/dd (EE)", { locale: ja });
-  };
-
-  const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${hours.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">

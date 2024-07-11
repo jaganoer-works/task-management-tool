@@ -30,23 +30,8 @@ import {
   Pause,
   StopCircle,
 } from "lucide-react";
+import { Project, Task } from "@/types";
 
-interface Task {
-  id: number;
-  text: string;
-  completed: boolean;
-  priority: "low" | "medium" | "high";
-  dueDate: Date | null;
-  timeSpent: number;
-  isTracking: boolean;
-  startTime: number | null;
-}
-
-interface Project {
-  id: number;
-  name: string;
-  tasks: Task[];
-}
 
 const priorityColors = {
   low: "bg-green-200",

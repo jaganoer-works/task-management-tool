@@ -31,13 +31,8 @@ import {
   StopCircle,
 } from "lucide-react";
 import { Project, Task } from "@/types";
+import { priorityColors } from "@/const/const";
 
-
-const priorityColors = {
-  low: "bg-green-200",
-  medium: "bg-yellow-200",
-  high: "bg-red-200",
-};
 
 const Home: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);

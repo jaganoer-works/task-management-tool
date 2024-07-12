@@ -31,6 +31,7 @@ import {
 import { priorityColors } from "@/const/const";
 import { useProjectManagement } from "@/hooks/useProjectManagement";
 import { formatDate, formatTime } from "@/lib/formatters";
+import ProjectForm from "@/components/ProjectForm";
 
 const Home: React.FC = () => {
   const {
@@ -69,19 +70,12 @@ const Home: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
       <h1 className="text-2xl font-bold mb-4">プロジェクト管理ツール</h1>
-      <div className="flex mb-4">
-        <Input
-          type="text"
-          value={newProject}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setNewProject(e.target.value)
-          }
-          onKeyDown={handleProjectKeyDown}
-          placeholder="新しいプロジェクト名を入力"
-          className="flex-grow mr-2"
-        />
-        <Button onClick={addProject}>プロジェクト追加</Button>
-      </div>
+      <ProjectForm
+        newProject={newProject}
+        setNewProject={setNewProject}
+        addProject={addProject}
+        handleProjectKeyDown={handleProjectKeyDown}
+      />
       <div className="mb-4">
         <Input
           type="text"

@@ -34,6 +34,7 @@ import { useProjectManagement } from "@/hooks/useProjectManagement";
 import { formatDate, formatTime } from "@/lib/formatters";
 import ProjectForm from "@/components/ProjectForm";
 import SearchAndFilter from "@/components/SearchAndFilter";
+import TaskForm from "@/components/TaskForm";
 
 const Home: React.FC = () => {
   const {
@@ -119,19 +120,13 @@ const Home: React.FC = () => {
               </Button>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="flex mb-4">
-                <Input
-                  type="text"
-                  value={newTask}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setNewTask(e.target.value)
-                  }
-                  onKeyDown={(e) => handleTaskKeyDown(e, project.id)}
-                  placeholder="新しいタスクを入力"
-                  className="flex-grow mr-2"
-                />
-                <Button onClick={() => addTask(project.id)}>タスク追加</Button>
-              </div>
+              <TaskForm
+                newTask={newTask}
+                setNewTask={setNewTask}
+                addTask={addTask}
+                handleTaskKeyDown={handleTaskKeyDown}
+                projectId={project.id}
+              />
               <ul>
                 {project.tasks.map((task) => (
                   <li

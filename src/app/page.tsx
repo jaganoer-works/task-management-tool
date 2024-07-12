@@ -27,11 +27,13 @@ import {
   Play,
   Pause,
   StopCircle,
+  Search,
 } from "lucide-react";
 import { priorityColors } from "@/const/const";
 import { useProjectManagement } from "@/hooks/useProjectManagement";
 import { formatDate, formatTime } from "@/lib/formatters";
 import ProjectForm from "@/components/ProjectForm";
+import SearchAndFilter from "@/components/SearchAndFilter";
 
 const Home: React.FC = () => {
   const {
@@ -76,40 +78,12 @@ const Home: React.FC = () => {
         addProject={addProject}
         handleProjectKeyDown={handleProjectKeyDown}
       />
-      <div className="mb-4">
-        <Input
-          type="text"
-          value={searchTerm}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setSearchTerm(e.target.value)
-          }
-          placeholder="タスクを検索"
-          className="mb-2"
-        />
-        <div className="flex space-x-2">
-          <Select onValueChange={setFilterPriority} defaultValue="all">
-            <SelectTrigger>
-              <SelectValue placeholder="優先度でフィルタ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全て</SelectItem>
-              <SelectItem value="low">低</SelectItem>
-              <SelectItem value="medium">中</SelectItem>
-              <SelectItem value="high">高</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select onValueChange={setFilterCompleted} defaultValue="all">
-            <SelectTrigger>
-              <SelectValue placeholder="状態でフィルタ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全て</SelectItem>
-              <SelectItem value="active">未完了</SelectItem>
-              <SelectItem value="completed">完了</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <SearchAndFilter
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        setFilterPriority={setFilterPriority}
+        setFilterCompleted={setFilterCompleted}
+      />
       <Accordion
         type="multiple"
         value={openProjects}
